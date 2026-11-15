@@ -26,6 +26,7 @@ export function isEmailConfigured(): boolean {
 
 function createAuth() {
   const env = getEnv();
+  const publicAuthOrigin = "https://atesta-near.vercel.app";
   const email: EmailConfig | null =
     env.BREVO_API_KEY && env.EMAIL_FROM
       ? { apiKey: env.BREVO_API_KEY, from: env.EMAIL_FROM, fromName: "Atesta" }
@@ -41,7 +42,10 @@ function createAuth() {
 
   return betterAuth({
     appName: "Atesta",
-    baseURL: env.NEXT_PUBLIC_APP_URL,
+    // Vercel's deployment URL can differ from the canonical site origin. Use
+    // the public host for production auth callbacks and explicitly trust it.
+    baseURL: env.APP_ENV === "production" ? publicAuthOrigin : env.NEXT_PUBLIC_APP_URL,
+    trustedOrigins: env.APP_ENV === "production" ? [publicAuthOrigin] : undefined,
     secret: env.BETTER_AUTH_SECRET,
     database: drizzleAdapter(getDbHandle(), { provider: "pg", usePlural: true, schema }),
 
