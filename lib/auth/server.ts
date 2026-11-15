@@ -31,13 +31,16 @@ function createAuth() {
     env.BREVO_API_KEY && env.EMAIL_FROM
       ? { apiKey: env.BREVO_API_KEY, from: env.EMAIL_FROM, fromName: "Atesta" }
       : null;
-  // Sent without waiting, so how long a request takes never reveals whether
-  // an account exists. Failures are logged without the address or link.
-  const deliver = (message: Parameters<typeof sendEmail>[1]) => {
+  // Await delivery so serverless runtimes keep the request alive until Brevo
+  // accepts or rejects the message. Failures are logged without the address or link.
+  const deliver = async (message: Parameters<typeof sendEmail>[1]) => {
     if (!email) return;
-    void sendEmail(email, message).catch((error: unknown) => {
+    try {
+      await sendEmail(email, message);
+    } catch (error: unknown) {
       console.error("Account email not sent:", error instanceof Error ? error.message : "unknown");
-    });
+      throw error;
+    }
   };
 
   return betterAuth({
@@ -61,7 +64,7 @@ function createAuth() {
       // A reset signs out every other session on the account.
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: email
-        ? async ({ user, url }) => deliver(passwordResetEmail(user.email, url))
+        ? async ({ user, url }) => await deliver(passwordResetEmail(user.email, url))
         : undefined,
     },
 
@@ -145,7 +148,7 @@ function createAuth() {
               // The confirmation email carries a code, not a link.
               overrideDefaultEmailVerification: true,
               sendVerificationOTP: async ({ email: to, otp, type }) => {
-                if (type === "email-verification") deliver(verificationCodeEmail(to, otp));
+                if (type === "email-verification") await deliver(verificationCodeEmail(to, otp));
               },
             }),
           ]
