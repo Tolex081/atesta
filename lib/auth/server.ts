@@ -44,8 +44,8 @@ function createAuth() {
     appName: "Atesta",
     // Vercel's deployment URL can differ from the canonical site origin. Use
     // the public host for production auth callbacks and explicitly trust it.
-    baseURL: env.APP_ENV === "production" ? publicAuthOrigin : env.NEXT_PUBLIC_APP_URL,
-    trustedOrigins: env.APP_ENV === "production" ? [publicAuthOrigin] : undefined,
+    baseURL: process.env.VERCEL_ENV === "production" ? publicAuthOrigin : env.NEXT_PUBLIC_APP_URL,
+    trustedOrigins: process.env.VERCEL_ENV === "production" ? [publicAuthOrigin] : undefined,
     secret: env.BETTER_AUTH_SECRET,
     database: drizzleAdapter(getDbHandle(), { provider: "pg", usePlural: true, schema }),
 
